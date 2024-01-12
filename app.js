@@ -5,9 +5,6 @@ const Listing = require("./models/listing.js");
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
-const wrapAsync = require("./utils/wrapAsync.js");
-const ExpressError = require("./utils/ExpressError.js");
-const {listingSchema} = require("./schema.js")
 
 const MONGO_URL = "mongodb://127.0.0.1:27017/vistadb";
 
@@ -34,18 +31,6 @@ app.get("/", (req, res) => {
     res.send("Hi, I am root");
 });
 
-const validateListing = (req, res, next) => {
-    let {error} = listingSchema.validate(req.body);
-
-    if (error) {
-        let errMsg = error.details.map((el) => el.message).join(",");
-        throw new ExpressError(400, errMsg);
-    } else {
-        next();
-    }
-}
-
-
 // ----------- INDEX ROUTE --------------
 app.get("/listings", wrapAsync(async (req, res) => {
     const allListings = await Listing.find({});
@@ -65,15 +50,13 @@ app.get("/listings/:id", wrapAsync(async (req, res) => {
 }));
 
 // ----------- CREATE ROUTE (POST-REQ) --------------
-app.post("/listings",
-    validateListing,
-    wrapAsync(async (req, res, next) => {
+app.post("/listings", async (req, res) => {
 
     const newListing = new Listing(req.body.listing);
 
     await newListing.save();
     res.redirect("/listings");
-}));
+});
 
 // ----------- EDIT ROUTE --------------
 app.get("/listings/:id/edit", wrapAsync(async (req, res) => {
@@ -99,7 +82,7 @@ app.delete("/listings/:id", wrapAsync(async (req, res) => {
     let deletedListing = await Listing.findByIdAndDelete(id);
     console.log(deletedListing);
     res.redirect("/listings");
-}));
+});
 
 
 
@@ -119,17 +102,6 @@ app.delete("/listings/:id", wrapAsync(async (req, res) => {
 //     console.log("Sample was saved");
 //     res.send("testing successful!");
 // });
-
-app.all("*", (req, res, next) => {
-    next(new ExpressError(404, "Page not found!"));
-});
-
-app.use((err, req, res, next) => {
-
-    let {statusCode = 500, message = "Something went wrong!"} = err;
-    res.status(statusCode).render("error.ejs", { message });
-    // res.status(statusCode).send(message);
-});
 
 app.listen(8080, () => {
     console.log("server is listening to port 8080");
