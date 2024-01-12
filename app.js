@@ -82,7 +82,7 @@ app.delete("/listings/:id", wrapAsync(async (req, res) => {
     let deletedListing = await Listing.findByIdAndDelete(id);
     console.log(deletedListing);
     res.redirect("/listings");
-});
+}));
 
 
 
